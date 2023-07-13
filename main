@@ -1,0 +1,177 @@
+import datetime
+import random
+import telebot
+from telebot import types
+from pycoingecko import CoinGeckoAPI
+from py_currency_converter import convert
+import time
+cg = CoinGeckoAPI()
+global ID
+ID = 5434586176
+
+global button
+button = types.ReplyKeyboardMarkup(resize_keyboard=True)
+
+bot = telebot.TeleBot('6105008054:AAHnVQ123BM2VtO86PJ9IW5pmDT-mfhO6wA')
+@bot.message_handler(commands=["start1"])
+
+def captcha(message):
+    global a, b
+    a, b = random.randint(1,11), random.randint(1,11)
+    msg = bot.send_message(message.chat.id, f'Решите правильно пример: {a} + {b} = ?')
+    bot.register_next_step_handler(msg, captcha2)
+def captcha2(message):
+    i = a + b
+    if message.text == str(i):
+        bot.send_message(message.chat.id, 'Вы прошли проверку!🎉')
+        main(message)
+    else:
+        bot.send_message(message.chat.id, 'Вы не прошли проверку.🙅 Повторите попытку.')
+        captcha(message)
+
+
+
+def main(message):
+    button = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    button.add(types.KeyboardButton('💵Купить Bitcoin (BTC)💵'), types.KeyboardButton('💷Продать Bitcoin (BTC)💷'))
+    button.add(types.KeyboardButton('💶Купить Bitcoin на BMB (Без комиссии)💶'))
+    button.add(types.KeyboardButton('👨🏼‍💻Оператор👨🏼‍💻'), types.KeyboardButton('📜Правила📜'))
+
+    msg = bot.send_message(message.chat.id, 'Вас приветствует обменник БРИСТОЛЬ🌺\n\nУ нас вы всегда можете купить или продать BTC по приятному курсу🔮🔮\n\nДобро пожаловать!',reply_markup=button)
+    bot.register_next_step_handler(msg, choice)
+
+def choice(message):
+
+    if message.text == '💵Купить Bitcoin (BTC)💵':
+        buy_btc(message)
+    elif message.text == '💷Продать Bitcoin (BTC)💷':
+        finish1(message)
+    elif message.text == '💶Купить Bitcoin на BMB (Без комиссии)💶':
+        buy_bmb(message)
+    elif message.text == '👨🏼‍💻Оператор👨🏼‍💻':
+        operator(message)
+    elif message.text == '📜Правила📜':
+        rules(message)
+    else:
+        main(message)
+
+def operator(message):
+    bot.send_message(message.chat.id, 'https://t.me/krigelmega')
+    main(message)
+
+
+def rules(message):
+    bot.send_message(message.chat.id, 'https://telegra.ph/Pravila-i-soglashenie--Sonic-Ex-10-12')
+    main(message)
+
+global price
+
+price = cg.get_price(ids='bitcoin', vs_currencies='rub')
+
+def buy_btc(message):
+    button = types.ReplyKeyboardRemove()
+    b = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    price = cg.get_price(ids='bitcoin', vs_currencies='rub')
+    msg = bot.send_message(message.chat.id, f'1 Bitcoin = {int(price["bitcoin"]["rub"] * 1.95)} RUB\n\nНапишите сумму : от 0.0001 BTC или от 300 руб 💶\n\nПожалуйста, введите сумму:', reply_markup=button)
+    bot.register_next_step_handler(msg, proverka)
+
+
+def buy_bmb(message):
+    msg = bot.send_message(message.chat.id,
+                           f'1 Bitcoin = {int(price["bitcoin"]["rub"])} RUB\n\nНапишите сумму : от 0.0001 до 0.5 BTC💶\n\nПожалуйста, введите сумму:',
+                           reply_markup=button)
+    bot.register_next_step_handler(msg, new)
+def new(message):
+    cource1 = {}
+    proverka1 = {}
+    proverka1['buy_bmb'] = message.text
+    cource1 = float(proverka1["buy_bmb"])
+    bot.send_message(ID, f'BMB ЗАЯВКА https://web.telegram.org/k/#{message.from_user.id} {cource1}')
+    bot.send_message(message.chat.id, f'Успешно приняли вашу заявку на {cource1} BTC. Ожидайте сообщения от оператора.⏳                                                     ')
+    main(message)
+
+
+
+def nonbtc(message):
+    msg = bot.send_message(message.chat.id, 'Введите корректное значение кошелька')
+    buy_btc(message)
+def proverka(message):
+    try:
+        global course
+        course = {}
+        proverka = {}
+        proverka['buy_btc'] = message.text
+        course = float(proverka["buy_btc"])
+        if (course > 300) and (course < 80000):
+            msg = bot.send_message(message.chat.id, f'Вы получите {float("{0:.8f}".format(course / (price["bitcoin"]["rub"])))} BTC на ваш кошелек.💰\n\nПожалуйста, укажите ваш BTC адрес.\n\nОплата принимается на карту 💳 банка Тинькофф или Сбербанк')
+            bot.register_next_step_handler(msg, proverka2)
+        elif (type(course) == float) and (course > 0.00001) and (course < 0.03):
+            msg = bot.send_message(message.chat.id, f'Вы получите {course} BTC на ваш кошелек.💰\n\nПожалуйста, укажите ваш BTC адрес.')
+            bot.register_next_step_handler(msg, proverka3)
+        else:
+
+            buy_btc(message)
+    except ValueError:
+
+        buy_btc(message)
+def proverka2(message):
+    global wallet
+    wallet = {}
+    wallet["proverka"] = message.text
+    if (len(str(wallet)) > 24) and (len(str(wallet)) < 80):
+        button = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        button.add(types.KeyboardButton("Подтверждаю✅"), types.KeyboardButton('Главная🔙'))
+
+        price = cg.get_price(ids='bitcoin', vs_currencies='rub')
+        msg = bot.send_message(message.chat.id, f'Вы обмениваете {float("{0:.0f}".format(course))} на {float("{0:.8f}".format(course / (price["bitcoin"]["rub"]) * 1.95))} BTC'
+                                          f'\n\nВаш кошелек: {wallet["proverka"]}'
+                                          f'\n\nМы ожидаем от вас оплаты в размере {course} по реквизитам: +79140707919', reply_markup=button)
+        bot.register_next_step_handler(msg, finish)
+
+    else:
+        bot.send_message(message.chat.id, 'Введите корректное значение кошелька')
+        buy_btc(message)
+
+def proverka3(message):
+    global wallet1
+    wallet1 = {}
+    wallet1["proverka3"] = message.text
+    if (len(str(wallet1)) > 24) and (len(str(wallet1)) < 80):
+
+        button = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        button.add(types.KeyboardButton("Подтверждаю✅"), types.KeyboardButton('Главная🔙'))
+
+        price = cg.get_price(ids='bitcoin', vs_currencies='rub')
+        msg = bot.send_message(message.chat.id, f'Вы получите {float("{0:.8f}".format(course))} за {float("{0:.0f}".format(course * ((price["bitcoin"]["rub"]))))*1.97} рублей.'
+                                          f'\n\nВаш кошелек: {wallet1["proverka3"]}'
+                                          f'\n\nМы ожидаем от вас оплаты в размере {float("{0:.0f}".format(course * (price["bitcoin"]["rub"]))) * 1.07} по реквизитам: +79140707919', reply_markup=button)
+        bot.register_next_step_handler(msg, finish)
+        print(course, price)
+    else:
+        bot.send_message(message.chat.id, 'Введите корректное значение кошелька')
+        buy_btc(message)
+
+def finish(message):
+    price = cg.get_price(ids='bitcoin', vs_currencies='rub')
+    if message.text == 'Подтверждаю✅':
+        bot.send_message(message.chat.id, 'Ваша заявка была создана. Ожидайте')
+        main(message)
+        bot.send_message(ID, f'Сумма обмена: {course}\n\n'
+                                        f'Примерная стоимость: {float("{0:.8f}".format(course / (price["bitcoin"]["rub"])))} BTC\n\n'
+                                        f'На кошелек: {wallet1["proverka3"]}\n\n'
+                                        f'Время заявки: {datetime.datetime.now()}', reply_markup=button)
+    elif message.text == 'Главная🔙':
+        main(message)
+        pass
+
+def finish1(message):
+    msg = bot.send_message(message.chat.id, "🫰Напишите сумму(от 0.00001 BTC), которую вы желаете продать:")
+    bot.register_next_step_handler(msg, finish2)
+
+def finish2(message):
+    bot.send_message(message.chat.id, "Принято!\n\nОжидайте сообщение от оператора⏳")
+    bot.send_message(ID, f'https://web.telegram.org/k/#{message.from_user.id}')
+    main(message)
+
+
+bot.polling()
